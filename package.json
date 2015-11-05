@@ -1,0 +1,36 @@
+{
+  "name": "ci-aggregator",
+  "version": "0.1.0",
+  "description": "Aggregate CI status from various providers",
+  "main": "index.js",
+  "scripts": {
+    "prepublish": "babel -d lib src",
+    "test": "mocha --compilers js:babel-core/register --require expect.js"
+  },
+  "keywords": [
+    "ci",
+    "buildbot",
+    "travis",
+    "jenkis",
+    "status"
+  ],
+  "author": "Jonas Pommerening",
+  "license": "MIT",
+  "dependencies": {
+    "node-fetch": "^1.3.3",
+    "url-template": "^2.0.6"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.1.1",
+    "babel-core": "^6.0.20",
+    "babel-preset-es2015": "^6.0.15",
+    "mocha": "^2.3.3",
+    "expect.js": "^0.3.1"
+  },
+  "babel": {
+    "presets": [
+      "es2015"
+    ],
+    "sourceMaps": "inline"
+  }
+}
