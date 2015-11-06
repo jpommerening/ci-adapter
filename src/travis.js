@@ -113,13 +113,9 @@ export default function Travis(endpoint, { headers: h, github_token, account } =
     });
   }
 
-  function getBuildDetails(build) {
-  }
-
   return {
     getInfo,
     getBuilders,
-    getBuilds,
-    getBuildDetails
+    getBuilds
   };
 }

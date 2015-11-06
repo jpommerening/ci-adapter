@@ -93,13 +93,9 @@ export default function BuildBot(endpoint, { headers: h } = {}) {
       });
   }
 
-  function getBuildDetails(build) {
-  }
-
   return {
     getInfo,
     getBuilders,
-    getBuilds,
-    getBuildDetails
+    getBuilds
   };
 }

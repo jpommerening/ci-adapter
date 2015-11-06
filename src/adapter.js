@@ -21,14 +21,14 @@ export class Adapter {
   constructor(options) {
   }
 
+  getInfo() {
+    return Promise.resolve({});
+  }
   getBuilders() {
     return Promise.resolve([]);
   }
   getBuilds(builder) {
     return Promise.resolve([]);
-  }
-  getBuildDetails(build) {
-    return Promise.resolve({});
   }
 }
 
@@ -56,10 +56,6 @@ export function combine(...adapters) {
     getBuilds: function getBuilds(builder) {
       const adapter = map.get(builder);
       return adapter.getBuilds(builder).then(addToMap(adapter));
-    },
-    getBuildDetails: function getBuildDetails(build) {
-      const adapter = map.get(build);
-      return adapter.getBuildDetails(build);
     }
   };
 }
