@@ -1,7 +1,13 @@
 import fetch from './fetch';
 import urltemplate from './url-template';
+import { SUCCESS, FAILURE, WARNING, UNKNOWN } from './adapter';
 
 const JENKINS_MEDIA_TYPE = 'application/json';
+const JENKINS_STATE_MAP = {
+  SUCCESS: SUCCESS,
+  UNSTABLE: WARNING,
+  FAILURE: FAILURE
+};
 
 export default function Jenkins(endpoint, { headers: h } = {}) {
   const headers = Object.assign( {
@@ -63,13 +69,16 @@ export default function Jenkins(endpoint, { headers: h } = {}) {
       });
     })).then(function (builds) {
       return builds.map(function (build) {
+        const building = build.building;
+
         return {
           name: builder.name,
           number: build.number,
           url: `${endpoint}/job/${builder.name}/${build.number}/api/json`,
           html_url: `${endpoint}/job/${builder.name}/${build.number}`,
+          state: building ? PENDING : ( JENKINS_STATE_MAP[ build.result ] || UNKNOWN ),
           start: new Date(build.timestamp),
-          end: new Date(build.timestamp + build.duration),
+          end: building ? null : new Date(build.timestamp + build.duration),
           data: build
         };
       });

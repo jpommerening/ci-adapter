@@ -1,7 +1,16 @@
 import fetch from './fetch';
 import urltemplate from './url-template';
+import { PENDING, SUCCESS, WARNING, FAILURE, ERRORED, UNKNOWN } from './adapter';
 
 const BUILDBOT_MEDIA_TYPE = 'application/json';
+const BUILDBOT_STATE_LIST = [
+  SUCCESS,
+  WARNING,
+  FAILURE,
+  UNKNOWN,
+  ERRORED,
+  ERRORED
+];
 
 export default function BuildBot(endpoint, { headers: h } = {}) {
   const headers = Object.assign( {
@@ -68,13 +77,16 @@ export default function BuildBot(endpoint, { headers: h } = {}) {
           if (numbers[ number ]) return false;
           return numbers[ number ] = true;
         }).map(function (build) {
+          const building = build.times[ 0 ] && !build.times[ 1 ];
+
           return {
             name: builder.name,
             number: build.number,
             url: `${endpoint}/json/builders/${builder.name}/builds/${build.number}`,
             html_url: `${endpoint}/builders/${builder.name}/builds/${build.number}`,
+            state: building ? PENDING : ( BUILDBOT_STATE_LIST[ build.results || 0 ] || UNKNOWN ),
             start: new Date(build.times[ 0 ] * 1000),
-            end: new Date(build.times[ 1 ] * 1000),
+            end: building ? null : new Date(build.times[ 1 ] * 1000),
             data: build
           };
         });

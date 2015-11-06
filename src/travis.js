@@ -1,8 +1,19 @@
 import fetch from './fetch';
 import urltemplate from './url-template';
+import { PENDING, SUCCESS, FAILURE, ERRORED, ABORTED, UNKNOWN } from './adapter';
 
 const TRAVIS_MEDIA_TYPE = 'application/vnd.travis-ci.2+json';
 const TRAVIS_HTML_URL = /^(https?:\/\/)(api\.(travis-ci\.(org|com))|([^\/]+)\/api)(\/.+)?$/;
+const TRAVIS_STATE_MAP = {
+  received: PENDING,
+  created: PENDING,
+  queued: PENDING,
+  started: PENDING,
+  passed: SUCCESS,
+  failed: FAILURE,
+  errored: ERRORED,
+  canceled: ABORTED
+};
 
 function getHtmlUrl(url) {
   const match = TRAVIS_HTML_URL.exec(url);
@@ -59,13 +70,15 @@ export default function Travis(endpoint, { headers: h, github_token, account } =
         return repos.map(function (repo) {
           const slug = repo.slug;
           const name = slug.split('/')[1];
+          const last = parseInt( repo.last_build_number, 10 );
+          const builds = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ].map( x => last - x ).filter( x => x >= 0 );
 
           return {
             name: name,
             url: `${endpoint}/repos/${slug}`,
             html_url: `${html_url}/${slug}`,
             builds_url: `${endpoint}/repos/${slug}/builds{?number,after_number}`,
-            builds: [ parseInt( repo.last_build_number, 10 ) ],
+            builds: builds,
             data: repo
           };
         });
@@ -84,13 +97,16 @@ export default function Travis(endpoint, { headers: h, github_token, account } =
       const builds = [].concat.apply( [], data.map(data => data.builds) );
 
       return builds.map(function (build) {
+        const building = TRAVIS_STATE_MAP[ build.state ] === PENDING;
+
         return {
           name: builder.name,
           number: parseInt(build.number, 10),
           url: `${endpoint}/repos/${account}/${builder.name}/builds/${build.id}`,
           html_url: `${html_url}/${account}/${builder.name}/builds/${build.id}`,
+          state: TRAVIS_STATE_MAP[ build.state ],
           start: new Date(build.started_at),
-          end: new Date(build.finished_at),
+          end: building ? null : new Date(build.finished_at),
           data: build
         };
       });
