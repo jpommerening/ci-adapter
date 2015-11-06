@@ -1,11 +1,13 @@
 import { Adapter, combine } from './adapter';
-import BuildBot from './buildbot';
+import Buildbot from './buildbot';
 import Jenkins from './jenkins';
 import Travis from './travis';
+import urltemplate from 'url-template';
 
 export {
   combine,
-  BuildBot,
+  urltemplate,
+  Buildbot,
   Jenkins,
   Travis
 };

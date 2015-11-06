@@ -1,5 +1,5 @@
 import fetch from './fetch';
-import urltemplate from './url-template';
+import urltemplate from 'url-template';
 import { SUCCESS, FAILURE, WARNING, UNKNOWN } from './adapter';
 
 const JENKINS_MEDIA_TYPE = 'application/json';

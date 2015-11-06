@@ -1,5 +1,5 @@
 import fetch from './fetch';
-import urltemplate from './url-template';
+import urltemplate from 'url-template';
 import { PENDING, SUCCESS, WARNING, FAILURE, ERRORED, UNKNOWN } from './adapter';
 
 const BUILDBOT_MEDIA_TYPE = 'application/json';
@@ -12,7 +12,7 @@ const BUILDBOT_STATE_LIST = [
   ERRORED
 ];
 
-export default function BuildBot(endpoint, { headers: h } = {}) {
+export default function Buildbot(endpoint, { headers: h } = {}) {
   const headers = Object.assign( {
     Accept: BUILDBOT_MEDIA_TYPE
   }, h );

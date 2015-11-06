@@ -1,10 +1,13 @@
 {
-  "name": "ci-aggregator",
+  "name": "ci-adapter",
   "version": "0.1.0",
-  "description": "Aggregate CI status from various providers",
+  "description": "Uniform access to a bunch of continuous integration providers",
   "main": "index.js",
+  "browser": {
+    "./index.js": "browser.js"
+  },
   "scripts": {
-    "prepublish": "babel -d lib src",
+    "prepublish": "babel -d lib src && browserify -o browser.js -i node-fetch -x url-template -t [ uglifyify -c ] --debug -e lib/index.js",
     "test": "mocha --compilers js:babel-core/register --require expect.js"
   },
   "keywords": [
@@ -24,8 +27,10 @@
     "babel-cli": "^6.1.1",
     "babel-core": "^6.0.20",
     "babel-preset-es2015": "^6.0.15",
+    "browserify": "^12.0.1",
+    "expect.js": "^0.3.1",
     "mocha": "^2.3.3",
-    "expect.js": "^0.3.1"
+    "uglifyify": "^3.0.1"
   },
   "babel": {
     "presets": [

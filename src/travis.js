@@ -1,5 +1,5 @@
 import fetch from './fetch';
-import urltemplate from './url-template';
+import urltemplate from 'url-template';
 import { PENDING, SUCCESS, FAILURE, ERRORED, ABORTED, UNKNOWN } from './adapter';
 
 const TRAVIS_MEDIA_TYPE = 'application/vnd.travis-ci.2+json';

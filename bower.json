@@ -1,0 +1,18 @@
+{
+  "name": "ci-adapter",
+  "version": "0.1.0",
+  "description": "Uniform access to a bunch of continuous integration providers",
+  "main": "browser.js",
+  "keywords": [
+    "ci",
+    "buildbot",
+    "travis",
+    "jenkis",
+    "status"
+  ],
+  "author": "Jonas Pommerening",
+  "license": "MIT",
+  "dependencies": {
+    "url-template": "^2.0.6"
+  }
+}
