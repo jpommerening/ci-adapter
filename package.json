@@ -2,13 +2,13 @@
   "name": "ci-adapter",
   "version": "0.1.0",
   "description": "Uniform access to a bunch of continuous integration providers",
-  "main": "index.js",
+  "main": "./lib",
   "browser": {
-    "./index.js": "browser.js"
+    "./lib/fetch.js": "./lib/browser-fetch.js"
   },
   "scripts": {
-    "prepublish": "babel -d lib src && browserify -o browser.js -i node-fetch -x url-template -t [ uglifyify -c ] --debug -e lib/index.js",
-    "test": "mocha --compilers js:babel-core/register --require expect.js"
+    "prepublish": "babel -d lib src && browserify -o browser.js -t [ uglifyify -c ] -g uglifyify --debug -s ci-adapter ./lib/index.js",
+    "test": "mocha --compilers js:babel-core/register"
   },
   "keywords": [
     "ci",

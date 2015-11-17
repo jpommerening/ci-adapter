@@ -7,7 +7,7 @@ export const ERRORED = 'errored';
 export const ABORTED = 'aborted';
 export const UNKNOWN = 'unknown';
 
-export const STATES = {
+export const state = {
   PENDING,
   SUCCESS,
   WARNING,

@@ -30,7 +30,8 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
           url: `${endpoint}/json`,
           html_url: endpoint,
           builders_url: `${endpoint}/json/builders{/name}`,
-          builders: Object.keys(root.builders)
+          builders: Object.keys(root.builders),
+          data: root
         };
       });
   }

@@ -85,8 +85,8 @@ adapter.getBuilds( builder ).then(function (builds) {
 
 ## Hypermedia
 
-The returned responses contain URIs ([RFC3986][]) and URI templates
-([RFC6570][]).  Since this library provides no HTTP endpoint in and of itself,
+The returned responses contain URIs ([RFC 3986][]) and URI templates
+([RFC 6570][]).  Since this library provides no HTTP endpoint in and of itself,
 these URIs point to the respective service the adapter is connected to. That
 is, the `url` field of a build object obtained from the Travis adapter will
 point to the Travis API endpoint endpoint of the given build.
@@ -118,5 +118,5 @@ const urls = builder.builds.map(number => template.expand({ number }));
 [Travis]: https://travis-ci.org "Travis CI"
 [Jenkins]: http://jenkins-ci.org "Jenkins ­ An extensible open source continuous integration server"
 [Buildbot]: http://buildbot.net "Buildbot ­ The Continuous Integration Framework"
-[RFC3986]: http://tools.ietf.org/html/rfc3986 "IETF ­ Uniform Resource Identifier (URI): Generic Syntax"
-[RFC6570]: http://tools.ietf.org/html/rfc6570 "IETF ­ URI Template"
+[RFC 3986]: http://tools.ietf.org/html/rfc3986 "IETF ­ Uniform Resource Identifier (URI): Generic Syntax"
+[RFC 6570]: http://tools.ietf.org/html/rfc6570 "IETF ­ URI Template"
