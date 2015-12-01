@@ -22,7 +22,7 @@ function getHtmlUrl(url) {
 
 export default function Travis(endpoint, { headers: h, github_token, account } = {}) {
   const headers = Object.assign( {
-    Accept: TRAVIS_MEDIA_TYPE
+    'Accept': TRAVIS_MEDIA_TYPE
   }, h );
   const options = {
     headers
@@ -33,11 +33,14 @@ export default function Travis(endpoint, { headers: h, github_token, account } =
     return fetch(`${endpoint}/auth/github`, {
       method: 'post',
       headers: {
-        'Accept': 'application/json',
+        'Accept': TRAVIS_MEDIA_TYPE,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ github_token })
     }).then(function (response) {
+      if (response.status !== 200) {
+        return response.text().then(text => Promise.reject(new Error(text)));
+      }
       return response.json();
     }).then(function ({ access_token }) {
       options.headers[ 'Authorization' ] = `token ${access_token}`;

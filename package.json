@@ -20,6 +20,8 @@
   "author": "Jonas Pommerening",
   "license": "MIT",
   "dependencies": {
+    "lru": "^1.0.0",
+    "lru-cache": "^2.7.0",
     "node-fetch": "^1.3.3",
     "url-template": "^2.0.6"
   },

@@ -38,13 +38,15 @@ export default function Jenkins(endpoint, { headers: h } = {}) {
   function getBuilders() {
     return getInfo()
       .then(function (info) {
-        const url = `${endpoint}/api/json?tree=jobs[name,builds[number]{,10}],views[name,jobs[name]]`;
+        const url = `${endpoint}/api/json?tree=jobs[name,buildable,builds[number]{,10}],views[name,jobs[name]]`;
 
         return fetch(url, options);
       }).then(function (response) {
         return response.json();
       }).then(function (data) {
-        return data.jobs.map(function (job) {
+        return data.jobs.filter(function (job) {
+          return job.buildable;
+        }).map(function (job) {
           const name = job.name;
 
           return {

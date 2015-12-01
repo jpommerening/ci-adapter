@@ -1,3 +1,4 @@
+import LRU from 'lru-cache';
 
 export const PENDING = 'pending';
 export const SUCCESS = 'success';
@@ -17,20 +18,23 @@ export const state = {
   UNKNOWN
 };
 
-export class Adapter {
-  constructor(options) {
-  }
-
-  getInfo() {
-    return Promise.resolve({});
-  }
-  getBuilders() {
-    return Promise.resolve([]);
-  }
-  getBuilds(builder) {
-    return Promise.resolve([]);
+export function Adapter(options) {
+  if (!(this instanceof Adapter)) {
+    return new Adapter(options);
   }
 }
+
+Adapter.prototype.getInfo = function getInfo() {
+  return Promise.resolve({});
+};
+
+Adapter.prototype.getBuilders = function getBuilders() {
+  return Promise.resolve([]);
+};
+
+Adapter.prototype.getBuilds = function getBuilds(builder) {
+  return Promise.resolve([]);
+};
 
 export function combine(...adapters) {
   const map = new Map();
@@ -49,6 +53,15 @@ export function combine(...adapters) {
   }
 
   return {
+    getInfo: function getInfo() {
+      return Promise.all(adapters.map(adapter => adapter.getInfo()))
+        .then(function (infos) {
+          return {
+            name: infos.map(info => info.name).join(', '),
+            data: infos
+          };
+        });
+    },
     getBuilders: function getBuilders() {
       return Promise.all(adapters.map(adapterBuilders))
                     .then(lists => [].concat(...lists));
@@ -57,5 +70,35 @@ export function combine(...adapters) {
       const adapter = map.get(builder);
       return adapter.getBuilds(builder).then(addToMap(adapter));
     }
+  };
+}
+
+export function cache(adapter, options) {
+  const keys = new WeakMap();
+  const cache = new LRU(options);
+
+  function memoize(fn, keyfn) {
+    return function() {
+      const key = keyfn.apply( this, arguments );
+      const value = cache.get(key) || fn.apply( this, arguments );
+
+      cache.set(key, value);
+      return value;
+    };
+  }
+
+  function keygen(prefix = 'id') {
+    const EMPTY = {};
+    let id = 0;
+    return function keygen(item = EMPTY) {
+      if (!keys.has(item)) keys.set(item, prefix + (id++));
+      return keys.get(item);
+    }
+  }
+
+  return {
+    getInfo: memoize(adapter.getInfo, keygen('info')),
+    getBuilders: memoize(adapter.getBuilders, keygen('builders')),
+    getBuilds: memoize(adapter.getBuilds, keygen('builds'))
   };
 }
