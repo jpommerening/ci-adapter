@@ -9,7 +9,7 @@ const JENKINS_STATE_MAP = {
   FAILURE: FAILURE
 };
 
-export default function Jenkins(endpoint, { headers: h } = {}) {
+export default function Jenkins(endpoint, { headers: h, view } = {}) {
   const headers = Object.assign({
     'Accept': JENKINS_MEDIA_TYPE,
     'User-Agent': USER_AGENT
@@ -43,8 +43,10 @@ export default function Jenkins(endpoint, { headers: h } = {}) {
       }).then(function (response) {
         return response.json();
       }).then(function (data) {
+        const filter = view ? (v => v.name === view) : (() => true);
+        const jobs = data.views.filter(filter)[ 0 ].jobs.map(job => job.name);
         return data.jobs.filter(function (job) {
-          return job.buildable;
+          return jobs.indexOf( job.name ) >= 0 && job.buildable;
         }).map(function (job) {
           const name = job.name;
 
