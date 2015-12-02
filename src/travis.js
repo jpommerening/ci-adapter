@@ -1,8 +1,9 @@
 import fetch from './fetch';
 import urltemplate from 'url-template';
-import { PENDING, SUCCESS, FAILURE, ERRORED, ABORTED, UNKNOWN } from './adapter';
+import { PENDING, SUCCESS, FAILURE, ERRORED, ABORTED, UNKNOWN, USER_AGENT } from './constants';
 
-const TRAVIS_MEDIA_TYPE = 'application/vnd.travis-ci.2+json';
+const TRAVIS_API_VERSION = 2;
+const TRAVIS_MEDIA_TYPE = `application/vnd.travis-ci.${TRAVIS_API_VERSION}+json`;
 const TRAVIS_HTML_URL = /^(https?:\/\/)(api\.(travis-ci\.(org|com))|([^\/]+)\/api)(\/.+)?$/;
 const TRAVIS_STATE_MAP = {
   received: PENDING,
@@ -21,21 +22,22 @@ function getHtmlUrl(url) {
 }
 
 export default function Travis(endpoint, { headers: h, github_token, account } = {}) {
-  const headers = Object.assign( {
-    'Accept': TRAVIS_MEDIA_TYPE
-  }, h );
+  const headers = Object.assign({
+    'Accept': TRAVIS_MEDIA_TYPE,
+    'User-Agent': USER_AGENT
+  }, h);
   const options = {
     headers
   };
   const html_url = getHtmlUrl(endpoint);
+  let token;
 
-  function getToken() {
-    return fetch(`${endpoint}/auth/github`, {
+  function getToken(github_token) {
+    return token || (token = fetch(`${endpoint}/auth/github`, {
       method: 'post',
-      headers: {
-        'Accept': TRAVIS_MEDIA_TYPE,
+      headers: Object.assign({}, options.headers, {
         'Content-Type': 'application/json'
-      },
+      }),
       body: JSON.stringify({ github_token })
     }).then(function (response) {
       if (response.status !== 200) {
@@ -45,12 +47,12 @@ export default function Travis(endpoint, { headers: h, github_token, account } =
     }).then(function ({ access_token }) {
       options.headers[ 'Authorization' ] = `token ${access_token}`;
       return access_token;
-    });
+    }));
   }
 
   function getInfo() {
-    return getToken()
-      .then(function(token) {
+    return (github_token ? getToken(github_token) : Promise.resolve(null))
+      .then(function() {
         return fetch(`${endpoint}/repos/${account}`, options);
       }).then(function (response) {
         return response.json();
@@ -74,7 +76,9 @@ export default function Travis(endpoint, { headers: h, github_token, account } =
           const slug = repo.slug;
           const name = slug.split('/')[1];
           const last = parseInt( repo.last_build_number, 10 );
-          const builds = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ].map( x => last - x ).filter( x => x >= 0 );
+          const builds = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
+            .map( x => last - x )
+            .filter( x => x >= 0 );
 
           return {
             name: name,

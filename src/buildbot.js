@@ -1,6 +1,6 @@
 import fetch from './fetch';
 import urltemplate from 'url-template';
-import { PENDING, SUCCESS, WARNING, FAILURE, ERRORED, UNKNOWN } from './adapter';
+import { PENDING, SUCCESS, WARNING, FAILURE, ERRORED, UNKNOWN, USER_AGENT } from './constants';
 
 const BUILDBOT_MEDIA_TYPE = 'application/json';
 const BUILDBOT_STATE_LIST = [
@@ -13,9 +13,10 @@ const BUILDBOT_STATE_LIST = [
 ];
 
 export default function Buildbot(endpoint, { headers: h } = {}) {
-  const headers = Object.assign( {
-    Accept: BUILDBOT_MEDIA_TYPE
-  }, h );
+  const headers = Object.assign({
+    'Accept': BUILDBOT_MEDIA_TYPE,
+    'User-Agent': USER_AGENT
+  }, h);
   const options = {
     headers
   };

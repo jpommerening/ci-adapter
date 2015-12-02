@@ -1,6 +1,6 @@
 import fetch from './fetch';
 import urltemplate from 'url-template';
-import { PENDING, SUCCESS, FAILURE, WARNING, UNKNOWN } from './adapter';
+import { PENDING, SUCCESS, FAILURE, WARNING, UNKNOWN, USER_AGENT } from './constants';
 
 const JENKINS_MEDIA_TYPE = 'application/json';
 const JENKINS_STATE_MAP = {
@@ -10,14 +10,13 @@ const JENKINS_STATE_MAP = {
 };
 
 export default function Jenkins(endpoint, { headers: h } = {}) {
-  const headers = Object.assign( {
-    Accept: JENKINS_MEDIA_TYPE
-  }, h );
+  const headers = Object.assign({
+    'Accept': JENKINS_MEDIA_TYPE,
+    'User-Agent': USER_AGENT
+  }, h);
   const options = {
     headers
   };
-
-  options.headers = Object.assign( {}, options.headers, headers );
 
   function getInfo() {
     return fetch(`${endpoint}/api/json`, options)
