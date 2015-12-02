@@ -50,12 +50,14 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
         return Object.keys(builders).map(function (key) {
           const name = key;
           const builder = builders[ key ];
+          const builds = [ -1 ].concat( builder.cachedBuilds );
 
           return {
             name: name,
             url: `${endpoint}/json/builders/${name}`,
             html_url: `${endpoint}/builders/${name}`,
             builds_url: `${endpoint}/json/builders/${name}/builds{/number}{?select*}`,
+            builds: builds,
             data: builder
           };
         });
@@ -63,7 +65,7 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
   }
 
   function getBuilds(builder) {
-    const select = [ -1 ].concat( builder.data.cachedBuilds );
+    const select = builder.builds;
     const template = urltemplate.parse( builder.builds_url );
     const url = template.expand({ select });
 
