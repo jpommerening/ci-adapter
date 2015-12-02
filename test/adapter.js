@@ -19,10 +19,16 @@ describe( 'An Adapter', function() {
       expect(adapter.getInfo()).to.be.a(Promise);
     } );
     it( '… resolving to an object with information about the adapter', function() {
-      return adapter.getInfo({}).then(function(details) {
+      return adapter.getInfo().then(function(details) {
         expect(details).to.be.an(Object);
       });
     } );
+  } );
+
+  describe( '#getBuilder(name)', function() {
+  } );
+
+  describe( '#getBuild(name, number)', function() {
   } );
 
   describe( '#getBuilders()', function() {
@@ -36,12 +42,23 @@ describe( 'An Adapter', function() {
     } );
   } );
 
-  describe( '#getBuilds(builder)', function() {
+  describe( '#getBuilds(name)', function() {
     it( 'returns a Promise …', function() {
-      expect(adapter.getBuilds({})).to.be.a(Promise);
+      expect(adapter.getBuilds('builder')).to.be.a(Promise);
     } );
     it( '… resolving to a list of builds', function() {
-      return adapter.getBuilds({}).then(function(builds) {
+      return adapter.getBuilds('builder').then(function(builds) {
+        expect(builds).to.be.an(Array);
+      });
+    } );
+  } );
+
+  describe( '#getAllBuilds()', function() {
+    it( 'returns a Promise …', function() {
+      expect(adapter.getAllBuilds()).to.be.a(Promise);
+    } );
+    it( '… resolving to a list of builds', function() {
+      return adapter.getAllBuilds().then(function(builds) {
         expect(builds).to.be.an(Array);
       });
     } );

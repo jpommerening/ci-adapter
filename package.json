@@ -2,8 +2,8 @@
   "name": "ci-adapter",
   "version": "0.1.2",
   "description": "Uniform access to a bunch of continuous integration providers",
-  "main": "./lib",
   "homepage": "https://github.com/jpommerening/ci-adapter",
+  "main": "./lib",
   "browser": {
     "./lib/fetch.js": "./lib/browser-fetch.js"
   },

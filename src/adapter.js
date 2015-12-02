@@ -7,15 +7,31 @@ export function Adapter(options) {
 }
 
 Adapter.prototype.getInfo = function getInfo() {
-  return Promise.resolve({});
+  return Promise.resolve({ builders: [] });
+};
+
+Adapter.prototype.getBuilder = function getBuilder(name) {
+  return Promise.resolve({ name, builds: [] });
+};
+
+Adapter.prototype.getBuild = function getBuild(name, number) {
+  return Promise.resolve({ name, number });
 };
 
 Adapter.prototype.getBuilders = function getBuilders() {
-  return Promise.resolve([]);
+  return this.getInfo()
+    .then(info => Promise.all(info.builders.map(name => this.getBuilder(name))));
 };
 
-Adapter.prototype.getBuilds = function getBuilds(builder) {
-  return Promise.resolve([]);
+Adapter.prototype.getBuilds = function getBuilds(name) {
+  return this.getBuilder(name)
+    .then(builder => Promise.all(builder.builds.map(number => this.getBuild(name, number))));
+};
+
+Adapter.prototype.getAllBuilds = function getAllBuilds() {
+  return this.getInfo()
+    .then(info => Promise.all(info.builders.map(name => this.getBuilds(name))))
+    .then(builds => [].concat(...builds));
 };
 
 export function combine(...adapters) {
@@ -78,9 +94,9 @@ export function cache(adapter, options) {
     }
   }
 
-  return {
-    getInfo: memoize(adapter.getInfo, keygen('info')),
-    getBuilders: memoize(adapter.getBuilders, keygen('builders')),
-    getBuilds: memoize(adapter.getBuilds, keygen('builds'))
-  };
+  return Object.create(adapter, {
+    getInfo: { value: memoize(adapter.getInfo, keygen('info')) },
+    getBuilders: { value: memoize(adapter.getBuilders, keygen('builders')) },
+    getBuilds: { value: memoize(adapter.getBuilds, keygen('builds')) }
+  });
 }
