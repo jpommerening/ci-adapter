@@ -1,5 +1,6 @@
 import fetch from './fetch';
 import urltemplate from 'url-template';
+import { handleResponse } from './util';
 import { PENDING, SUCCESS, FAILURE, ERRORED, ABORTED, UNKNOWN, USER_AGENT } from './constants';
 
 const TRAVIS_API_VERSION = 2;
@@ -99,13 +100,6 @@ export default function Travis(endpoint, { headers: h, github_token, account } =
 
       return builds.map(data => makeBuild(builder.data, data));
     });
-  }
-
-  function handleResponse(response) {
-    if (response.status === 200)
-      return response.json();
-    return response.text()
-      .then(text => Promise.reject(new Error(`${response.status} ${response.statusText}: ${text}`)));
   }
 
   function makeInfo(data) {

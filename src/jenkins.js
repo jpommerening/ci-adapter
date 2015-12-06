@@ -1,5 +1,6 @@
 import fetch from './fetch';
 import urltemplate from 'url-template';
+import { handleResponse } from './util';
 import { PENDING, SUCCESS, FAILURE, WARNING, UNKNOWN, USER_AGENT } from './constants';
 
 const JENKINS_MEDIA_TYPE = 'application/json';
@@ -27,7 +28,7 @@ export default function Jenkins(endpoint, { headers: h, view } = {}) {
   function getBuilder(name) {
     return getInfo()
       .then(function (info) {
-        const template = urltemplate.parse( info.builders_url );
+        const template = urltemplate.parse(info.builders_url);
         const url = template.expand({ name });
 
         return fetch(url, options);
@@ -48,7 +49,7 @@ export default function Jenkins(endpoint, { headers: h, view } = {}) {
         const filter = view ? (v => v.name === view) : (() => true);
         const jobs = data.views.filter(filter)[ 0 ].jobs.map(job => job.name);
         return data.jobs.filter(function (job) {
-          return jobs.indexOf( job.name ) >= 0 && job.buildable;
+          return jobs.indexOf(job.name) >= 0 && job.buildable;
         }).map(makeBuilder);
       });
   }
@@ -56,7 +57,7 @@ export default function Jenkins(endpoint, { headers: h, view } = {}) {
   function getBuild(name, number) {
     return getBuilder(name)
       .then(function (builder) {
-        const template = urltemplate.parse( builder.builds_url );
+        const template = urltemplate.parse(builder.builds_url);
         const url = template.expand({ number });
 
         return fetch(url, options)
@@ -67,20 +68,13 @@ export default function Jenkins(endpoint, { headers: h, view } = {}) {
 
   function getBuilds(builder) {
     return Promise.all(builder.builds.map(function (number) {
-      const template = urltemplate.parse( builder.builds_url );
+      const template = urltemplate.parse(builder.builds_url);
       const url = template.expand({ number });
 
       return fetch(url, options)
         .then(handleResponse)
         .then(data => makeBuild(builder.data, data));
     }));
-  }
-
-  function handleResponse(response) {
-    if (response.status === 200)
-      return response.json();
-    return response.text()
-      .then(text => Promise.reject(new Error(`${response.status} ${response.statusText}: ${text}`)));
   }
 
   function makeInfo(root) {
@@ -124,7 +118,7 @@ export default function Jenkins(endpoint, { headers: h, view } = {}) {
       number,
       url: `${endpoint}/job/${name}/${number}/api/json`,
       html_url: `${endpoint}/job/${name}/${number}`,
-      state: building ? PENDING : ( JENKINS_STATE_MAP[ build.result ] || UNKNOWN ),
+      state: building ? PENDING : (JENKINS_STATE_MAP[ build.result ] || UNKNOWN),
       start: new Date(build.timestamp),
       end: building ? null : new Date(build.timestamp + build.duration),
       data

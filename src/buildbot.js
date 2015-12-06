@@ -1,5 +1,6 @@
 import fetch from './fetch';
 import urltemplate from 'url-template';
+import { handleResponse } from './util';
 import { PENDING, SUCCESS, WARNING, FAILURE, ERRORED, UNKNOWN, USER_AGENT } from './constants';
 
 const BUILDBOT_MEDIA_TYPE = 'application/json';
@@ -72,24 +73,19 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
 
     return fetch(url, options)
       .then(handleResponse)
-      .then(function (builds) {
-        const numbers = {};
-
-        return Object.keys(builds).map(function (key) {
-          return builds[ key ];
-        }).filter(function ({ number }) {
-          if (numbers[ number ]) return false;
-          return numbers[ number ] = true;
-        });
-      })
+      .then(uniqueBuilds)
       .then(builds => builds.map(makeBuild));
   }
 
-  function handleResponse(response) {
-    if (response.status === 200)
-      return response.json();
-    return response.text()
-      .then(text => Promise.reject(new Error(`${response.status} ${response.statusText}: ${text}`)));
+  function uniqueBuilds(builds) {
+    const numbers = {};
+
+    return Object.keys(builds).map(function (key) {
+      return builds[ key ];
+    }).filter(function ({ number }) {
+      if (numbers[ number ]) return false;
+      return numbers[ number ] = true;
+    });
   }
 
   function makeInfo(root) {
@@ -108,7 +104,7 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
   }
 
   function makeBuilder(name, builder) {
-    const builds = [ -1 ].concat( builder.cachedBuilds );
+    const builds = [ -1 ].concat(builder.cachedBuilds);
     const data = builder;
 
     return {
@@ -132,7 +128,7 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
       number,
       url: `${endpoint}/json/builders/${name}/builds/${number}`,
       html_url: `${endpoint}/builders/${name}/builds/${number}`,
-      state: building ? PENDING : ( BUILDBOT_STATE_LIST[ build.results || 0 ] || UNKNOWN ),
+      state: building ? PENDING : (BUILDBOT_STATE_LIST[ build.results || 0 ] || UNKNOWN),
       start: new Date(build.times[ 0 ] * 1000),
       end: building ? null : new Date(build.times[ 1 ] * 1000),
       data
