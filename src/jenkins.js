@@ -37,6 +37,18 @@ export default function Jenkins(endpoint, { headers: h, view } = {}) {
       .then(makeBuilder);
   }
 
+  function getBuild(name, number) {
+    return getBuilder(name)
+      .then(function (builder) {
+        const template = urltemplate.parse(builder.builds_url);
+        const url = template.expand({ number });
+
+        return fetch(url, options)
+          .then(handleResponse)
+          .then(data => makeBuild(builder.data, data));
+      });
+  }
+
   function getBuilders() {
     return getInfo()
       .then(function (info) {
@@ -54,27 +66,9 @@ export default function Jenkins(endpoint, { headers: h, view } = {}) {
       });
   }
 
-  function getBuild(name, number) {
+  function getBuilds(name) {
     return getBuilder(name)
-      .then(function (builder) {
-        const template = urltemplate.parse(builder.builds_url);
-        const url = template.expand({ number });
-
-        return fetch(url, options)
-          .then(handleResponse)
-          .then(data => makeBuild(builder.data, data));
-      });
-  }
-
-  function getBuilds(builder) {
-    return Promise.all(builder.builds.map(function (number) {
-      const template = urltemplate.parse(builder.builds_url);
-      const url = template.expand({ number });
-
-      return fetch(url, options)
-        .then(handleResponse)
-        .then(data => makeBuild(builder.data, data));
-    }));
+      .then(builder => Promise.all(builder.builds.map(number => getBuild(name, number))));
   }
 
   function makeInfo(root) {

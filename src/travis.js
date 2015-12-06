@@ -67,18 +67,10 @@ export default function Travis(endpoint, { headers: h, github_token, account } =
       });
   }
 
-  function getBuilders() {
-    return getInfo()
-      .then(function (info) {
-        const repos = info.data.repos.filter(repo => info.builders.indexOf(repo.slug.split('/').pop() >= 0));
-        return repos.map(makeBuilder);
-      });
-  }
-
   function getBuild(name, number) {
     return getBuilder(name)
       .then(function (builder) {
-        const template = urltemplate.parse( builder.builds_url );
+        const template = urltemplate.parse(builder.builds_url);
         const url = template.expand({ number });
 
         return fetch(url, options)
@@ -87,19 +79,17 @@ export default function Travis(endpoint, { headers: h, github_token, account } =
       });
   }
 
-  function getBuilds(builder) {
-    return Promise.all(builder.builds.map(function (number) {
-      const template = urltemplate.parse( builder.builds_url );
-      const url = template.expand({ number });
-
-      return fetch(url, options).then(function (response) {
-        return response.json();
+  function getBuilders() {
+    return getInfo()
+      .then(function (info) {
+        const repos = info.data.repos.filter(repo => info.builders.indexOf(repo.slug.split('/').pop() >= 0));
+        return repos.map(makeBuilder);
       });
-    })).then(function (data) {
-      const builds = [].concat.apply( [], data.map(data => data.builds) );
+  }
 
-      return builds.map(data => makeBuild(builder.data, data));
-    });
+  function getBuilds(name) {
+    return getBuilder(name)
+      .then(builder => Promise.all(builder.builds.map(number => getBuild(name, number))));
   }
 
   function makeInfo(data) {
@@ -123,8 +113,8 @@ export default function Travis(endpoint, { headers: h, github_token, account } =
     const name = slug.split('/').pop();
     const last = parseInt( repo.last_build_number, 10 );
     const builds = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
-      .map( x => last - x )
-      .filter( x => x >= 0 );
+      .map(x => last - x)
+      .filter(x => x >= 0);
     const data = repo;
 
     return {

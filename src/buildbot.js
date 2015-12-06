@@ -35,23 +35,9 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
         const url = template.expand({ name });
 
         return fetch(url, options)
-          .then(handleResponse)
-          .then((data) => makeBuilder(name, data));
-      });
-  }
-
-  function getBuilders() {
-    return getInfo()
-      .then(function (info) {
-        const template = urltemplate.parse(info.builders_url);
-        const url = template.expand({});
-
-        return fetch(url, options);
       })
       .then(handleResponse)
-      .then(function (builders) {
-        return Object.keys(builders).map((name) => makeBuilder(name, builders[name]));
-      });
+      .then((data) => makeBuilder(name, data));
   }
 
   function getBuild(name, number) {
@@ -60,18 +46,35 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
         const template = urltemplate.parse(builder.builds_url);
         const url = template.expand({ number });
 
-        return fetch(url, options)
-          .then(handleResponse)
-          .then(makeBuild);
-      });
+        return fetch(url, options);
+      })
+      .then(handleResponse)
+      .then(makeBuild);
   }
 
-  function getBuilds(builder) {
-    const select = builder.builds;
-    const template = urltemplate.parse( builder.builds_url );
-    const url = template.expand({ select });
+  function getBuilders() {
+    return getInfo()
+      .then(function (info) {
+        const select = info.builders;
+        const template = urltemplate.parse(info.builders_url);
+        const url = template.expand({ select });
 
-    return fetch(url, options)
+        return fetch(url, options);
+      })
+      .then(handleResponse)
+      .then(data => Object.keys(data)
+                          .map(key => makeBuilder(key, data[key])));
+  }
+
+  function getBuilds(name) {
+    return getBuilder(name)
+      .then(function (builder) {
+        const select = builder.builds;
+        const template = urltemplate.parse( builder.builds_url );
+        const url = template.expand({ select });
+
+        return fetch(url, options)
+      })
       .then(handleResponse)
       .then(uniqueBuilds)
       .then(builds => builds.map(makeBuild));
@@ -80,12 +83,12 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
   function uniqueBuilds(builds) {
     const numbers = {};
 
-    return Object.keys(builds).map(function (key) {
-      return builds[ key ];
-    }).filter(function ({ number }) {
-      if (numbers[ number ]) return false;
-      return numbers[ number ] = true;
-    });
+    return Object.keys(builds)
+      .map(key => builds[key])
+      .filter(function ({ number }) {
+        if (numbers[ number ]) return false;
+        return numbers[ number ] = true;
+      });
   }
 
   function makeInfo(root) {
@@ -97,7 +100,7 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
       name,
       url: `${endpoint}/json`,
       html_url: endpoint,
-      builders_url: `${endpoint}/json/builders{/name}`,
+      builders_url: `${endpoint}/json/builders{/name}{?select*}`,
       builders,
       data
     };
