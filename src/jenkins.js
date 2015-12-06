@@ -20,18 +20,20 @@ export default function Jenkins(endpoint, { headers: h, view } = {}) {
 
   function getInfo() {
     return fetch(`${endpoint}/api/json`, options)
-      .then(function (response) {
-        return response.json();
-      }).then(function (root) {
-        return {
-          name: root.nodeName,
-          url: `${endpoint}/api/json`,
-          html_url: endpoint,
-          builders_url: `${endpoint}/job{/name}/api/json{?tree}`,
-          builders: root.jobs.map(job => job.name),
-          data: root
-        };
-      });
+      .then(handleResponse)
+      .then(makeInfo);
+  }
+
+  function getBuilder(name) {
+    return getInfo()
+      .then(function (info) {
+        const template = urltemplate.parse( info.builders_url );
+        const url = template.expand({ name });
+
+        return fetch(url, options);
+      })
+      .then(handleResponse)
+      .then(makeBuilder);
   }
 
   function getBuilders() {
@@ -40,25 +42,26 @@ export default function Jenkins(endpoint, { headers: h, view } = {}) {
         const url = `${endpoint}/api/json?tree=jobs[name,buildable,builds[number]{,10}],views[name,jobs[name]]`;
 
         return fetch(url, options);
-      }).then(function (response) {
-        return response.json();
-      }).then(function (data) {
+      })
+      .then(handleResponse)
+      .then(function (data) {
         const filter = view ? (v => v.name === view) : (() => true);
         const jobs = data.views.filter(filter)[ 0 ].jobs.map(job => job.name);
         return data.jobs.filter(function (job) {
           return jobs.indexOf( job.name ) >= 0 && job.buildable;
-        }).map(function (job) {
-          const name = job.name;
+        }).map(makeBuilder);
+      });
+  }
 
-          return {
-            name: name,
-            url: `${endpoint}/job/${name}/api/json`,
-            html_url: `${endpoint}/job/${name}`,
-            builds_url: `${endpoint}/job/${name}/{number}/api/json{?tree}`,
-            builds: job.builds.map(build => build.number),
-            data: data
-          };
-        });
+  function getBuild(name, number) {
+    return getBuilder(name)
+      .then(function (builder) {
+        const template = urltemplate.parse( builder.builds_url );
+        const url = template.expand({ number });
+
+        return fetch(url, options)
+          .then(handleResponse)
+          .then(data => makeBuild(builder.data, data));
       });
   }
 
@@ -67,30 +70,72 @@ export default function Jenkins(endpoint, { headers: h, view } = {}) {
       const template = urltemplate.parse( builder.builds_url );
       const url = template.expand({ number });
 
-      return fetch(url, options).then(function (response) {
-        return response.json();
-      });
-    })).then(function (builds) {
-      return builds.map(function (build) {
-        const building = build.building;
+      return fetch(url, options)
+        .then(handleResponse)
+        .then(data => makeBuild(builder.data, data));
+    }));
+  }
 
-        return {
-          name: builder.name,
-          number: build.number,
-          url: `${endpoint}/job/${builder.name}/${build.number}/api/json`,
-          html_url: `${endpoint}/job/${builder.name}/${build.number}`,
-          state: building ? PENDING : ( JENKINS_STATE_MAP[ build.result ] || UNKNOWN ),
-          start: new Date(build.timestamp),
-          end: building ? null : new Date(build.timestamp + build.duration),
-          data: build
-        };
-      });
-    });
+  function handleResponse(response) {
+    if (response.status === 200)
+      return response.json();
+    return response.text()
+      .then(text => Promise.reject(new Error(`${response.status} ${response.statusText}: ${text}`)));
+  }
+
+  function makeInfo(root) {
+    const name = root.nodeName;
+    const builders = root.jobs.map(job => job.name);
+    const data = root;
+
+    return {
+      name,
+      url: `${endpoint}/api/json`,
+      html_url: endpoint,
+      builders_url: `${endpoint}/job{/name}/api/json{?tree}`,
+      builders,
+      data
+    };
+  }
+
+  function makeBuilder(job) {
+    const name = job.name;
+    const builds = job.builds.map(build => build.number);
+    const data = job;
+
+    return {
+      data,
+      name,
+      url: `${endpoint}/job/${name}/api/json`,
+      html_url: `${endpoint}/job/${name}`,
+      builds_url: `${endpoint}/job/${name}/{number}/api/json{?tree}`,
+      builds
+    };
+  }
+
+  function makeBuild(job, build) {
+    const name = job.name;
+    const number = build.number;
+    const building = build.building;
+    const data = build;
+
+    return {
+      name,
+      number,
+      url: `${endpoint}/job/${name}/${number}/api/json`,
+      html_url: `${endpoint}/job/${name}/${number}`,
+      state: building ? PENDING : ( JENKINS_STATE_MAP[ build.result ] || UNKNOWN ),
+      start: new Date(build.timestamp),
+      end: building ? null : new Date(build.timestamp + build.duration),
+      data
+    };
   }
 
   return {
     getInfo,
+    getBuilder,
     getBuilders,
+    getBuild,
     getBuilds
   };
 }

@@ -19,4 +19,5 @@ export const state = {
 };
 
 export const VERSION = pkg.version;
-export const USER_AGENT = `CI-Adapter/${pkg.version} (+${pkg.homepage})`;
+export const USER_AGENT_DETAILS = typeof navigator !== 'undefined' ? navigator.userAgent : `Node.js ${process.version}`;
+export const USER_AGENT = `CI-Adapter/${pkg.version} (+${pkg.homepage}) ${USER_AGENT_DETAILS}`;

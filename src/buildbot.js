@@ -23,17 +23,19 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
 
   function getInfo() {
     return fetch(`${endpoint}/json`, options)
-      .then(function (response) {
-        return response.json();
-      }).then(function (root) {
-        return {
-          name: root.project.title,
-          url: `${endpoint}/json`,
-          html_url: endpoint,
-          builders_url: `${endpoint}/json/builders{/name}`,
-          builders: Object.keys(root.builders),
-          data: root
-        };
+      .then(handleResponse)
+      .then(makeInfo);
+  }
+
+  function getBuilder(name) {
+    return getInfo()
+      .then(function (info) {
+        const template = urltemplate.parse(info.builders_url);
+        const url = template.expand({ name });
+
+        return fetch(url, options)
+          .then(handleResponse)
+          .then((data) => makeBuilder(name, data));
       });
   }
 
@@ -44,23 +46,22 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
         const url = template.expand({});
 
         return fetch(url, options);
-      }).then(function (response) {
-        return response.json();
-      }).then(function (builders) {
-        return Object.keys(builders).map(function (key) {
-          const name = key;
-          const builder = builders[ key ];
-          const builds = [ -1 ].concat( builder.cachedBuilds );
+      })
+      .then(handleResponse)
+      .then(function (builders) {
+        return Object.keys(builders).map((name) => makeBuilder(name, builders[name]));
+      });
+  }
 
-          return {
-            name: name,
-            url: `${endpoint}/json/builders/${name}`,
-            html_url: `${endpoint}/builders/${name}`,
-            builds_url: `${endpoint}/json/builders/${name}/builds{/number}{?select*}`,
-            builds: builds,
-            data: builder
-          };
-        });
+  function getBuild(name, number) {
+    return getBuilder(name)
+      .then(function (builder) {
+        const template = urltemplate.parse(builder.builds_url);
+        const url = template.expand({ number });
+
+        return fetch(url, options)
+          .then(handleResponse)
+          .then(makeBuild);
       });
   }
 
@@ -70,9 +71,8 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
     const url = template.expand({ select });
 
     return fetch(url, options)
-      .then(function (response) {
-        return response.json();
-      }).then(function (builds) {
+      .then(handleResponse)
+      .then(function (builds) {
         const numbers = {};
 
         return Object.keys(builds).map(function (key) {
@@ -80,26 +80,70 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
         }).filter(function ({ number }) {
           if (numbers[ number ]) return false;
           return numbers[ number ] = true;
-        }).map(function (build) {
-          const building = build.times[ 0 ] && !build.times[ 1 ];
-
-          return {
-            name: builder.name,
-            number: build.number,
-            url: `${endpoint}/json/builders/${builder.name}/builds/${build.number}`,
-            html_url: `${endpoint}/builders/${builder.name}/builds/${build.number}`,
-            state: building ? PENDING : ( BUILDBOT_STATE_LIST[ build.results || 0 ] || UNKNOWN ),
-            start: new Date(build.times[ 0 ] * 1000),
-            end: building ? null : new Date(build.times[ 1 ] * 1000),
-            data: build
-          };
         });
-      });
+      })
+      .then(builds => builds.map(makeBuild));
+  }
+
+  function handleResponse(response) {
+    if (response.status === 200)
+      return response.json();
+    return response.text()
+      .then(text => Promise.reject(new Error(`${response.status} ${response.statusText}: ${text}`)));
+  }
+
+  function makeInfo(root) {
+    const name = root.project.title;
+    const builders = Object.keys(root.builders);
+    const data = root;
+
+    return {
+      name,
+      url: `${endpoint}/json`,
+      html_url: endpoint,
+      builders_url: `${endpoint}/json/builders{/name}`,
+      builders,
+      data
+    };
+  }
+
+  function makeBuilder(name, builder) {
+    const builds = [ -1 ].concat( builder.cachedBuilds );
+    const data = builder;
+
+    return {
+      name,
+      url: `${endpoint}/json/builders/${name}`,
+      html_url: `${endpoint}/builders/${name}`,
+      builds_url: `${endpoint}/json/builders/${name}/builds{/number}{?select*}`,
+      builds,
+      data
+    };
+  }
+
+  function makeBuild(build) {
+    const name = build.builderName;
+    const number = build.number;
+    const building = build.times[ 0 ] && !build.times[ 1 ];
+    const data = build;
+
+    return {
+      name,
+      number,
+      url: `${endpoint}/json/builders/${name}/builds/${number}`,
+      html_url: `${endpoint}/builders/${name}/builds/${number}`,
+      state: building ? PENDING : ( BUILDBOT_STATE_LIST[ build.results || 0 ] || UNKNOWN ),
+      start: new Date(build.times[ 0 ] * 1000),
+      end: building ? null : new Date(build.times[ 1 ] * 1000),
+      data
+    };
   }
 
   return {
     getInfo,
+    getBuilder,
     getBuilders,
+    getBuild,
     getBuilds
   };
 }
