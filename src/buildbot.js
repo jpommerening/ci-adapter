@@ -1,5 +1,7 @@
-import fetch from './fetch';
 import urltemplate from 'url-template';
+import fetch from './fetch';
+import { inherits } from 'util';
+import { Adapter } from './adapter';
 import { handleResponse } from './util';
 import { PENDING, SUCCESS, WARNING, FAILURE, ERRORED, UNKNOWN, USER_AGENT } from './constants';
 
@@ -13,7 +15,24 @@ const BUILDBOT_STATE_LIST = [
   ERRORED
 ];
 
+function uniqueBuilds(builds) {
+  const numbers = {};
+
+  return Object.keys(builds)
+    .map(key => builds[key])
+    .filter(function ({ number }) {
+      if (numbers[ number ]) return false;
+      return numbers[ number ] = true;
+    });
+}
+
+inherits(Buildbot, Adapter);
+
 export default function Buildbot(endpoint, { headers: h } = {}) {
+  if (!(this instanceof Buildbot)) {
+    return new Buildbot(endpoint, { headers: h });
+  }
+
   const headers = Object.assign({
     'Accept': BUILDBOT_MEDIA_TYPE,
     'User-Agent': USER_AGENT
@@ -22,73 +41,58 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
     headers
   };
 
+  Adapter.call(this);
+
+  this.getInfo = getInfo;
+  this.getBuilder = getBuilder;
+  this.getBuild = getBuild;
+  this.getBuilders = getBuilders;
+  this.getBuilds = getBuilds;
+
   function getInfo() {
     return fetch(`${endpoint}/json`, options)
       .then(handleResponse)
       .then(makeInfo);
   }
 
-  function getBuilder(name) {
-    return getInfo()
-      .then(function (info) {
-        const template = urltemplate.parse(info.builders_url);
-        const url = template.expand({ name });
+  function getBuilder(info, name) {
+    const template = urltemplate.parse(info.builders_url);
+    const url = template.expand({ name });
 
-        return fetch(url, options)
-      })
+    return fetch(url, options)
       .then(handleResponse)
       .then((data) => makeBuilder(name, data));
   }
 
-  function getBuild(name, number) {
-    return getBuilder(name)
-      .then(function (builder) {
-        const template = urltemplate.parse(builder.builds_url);
-        const url = template.expand({ number });
+  function getBuild(builder, number) {
+    const template = urltemplate.parse(builder.builds_url);
+    const url = template.expand({ number });
 
-        return fetch(url, options);
-      })
+    return fetch(url, options)
       .then(handleResponse)
       .then(makeBuild);
   }
 
-  function getBuilders() {
-    return getInfo()
-      .then(function (info) {
-        const select = info.builders;
-        const template = urltemplate.parse(info.builders_url);
-        const url = template.expand({ select });
+  function getBuilders(info) {
+    const select = info.builders;
+    const template = urltemplate.parse(info.builders_url);
+    const url = template.expand({ select });
 
-        return fetch(url, options);
-      })
+    return fetch(url, options)
       .then(handleResponse)
       .then(data => Object.keys(data)
                           .map(key => makeBuilder(key, data[key])));
   }
 
-  function getBuilds(name) {
-    return getBuilder(name)
-      .then(function (builder) {
-        const select = builder.builds;
-        const template = urltemplate.parse( builder.builds_url );
-        const url = template.expand({ select });
+  function getBuilds(builder) {
+    const select = builder.builds;
+    const template = urltemplate.parse( builder.builds_url );
+    const url = template.expand({ select });
 
-        return fetch(url, options)
-      })
+    return fetch(url, options)
       .then(handleResponse)
       .then(uniqueBuilds)
       .then(builds => builds.map(makeBuild));
-  }
-
-  function uniqueBuilds(builds) {
-    const numbers = {};
-
-    return Object.keys(builds)
-      .map(key => builds[key])
-      .filter(function ({ number }) {
-        if (numbers[ number ]) return false;
-        return numbers[ number ] = true;
-      });
   }
 
   function makeInfo(root) {
@@ -137,12 +141,5 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
       data
     };
   }
-
-  return {
-    getInfo,
-    getBuilder,
-    getBuilders,
-    getBuild,
-    getBuilds
-  };
 }
+

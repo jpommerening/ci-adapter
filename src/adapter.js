@@ -10,27 +10,25 @@ Adapter.prototype.getInfo = function getInfo() {
   return Promise.resolve({ builders: [] });
 };
 
-Adapter.prototype.getBuilder = function getBuilder(name) {
+Adapter.prototype.getBuilder = function getBuilder(info, name) {
   return Promise.resolve({ name, builds: [] });
 };
 
-Adapter.prototype.getBuild = function getBuild(name, number) {
-  return Promise.resolve({ name, number });
+Adapter.prototype.getBuild = function getBuild(builder, number) {
+  return Promise.resolve({ name: builder.name, number });
 };
 
-Adapter.prototype.getBuilders = function getBuilders() {
-  return this.getInfo()
-    .then(info => Promise.all(info.builders.map(name => this.getBuilder(name))));
+Adapter.prototype.getBuilders = function getBuilders(info) {
+  return Promise.all(info.builders.map(name => this.getBuilder(info, name)));
 };
 
-Adapter.prototype.getBuilds = function getBuilds(name) {
-  return this.getBuilder(name)
-    .then(builder => Promise.all(builder.builds.map(number => this.getBuild(name, number))));
+Adapter.prototype.getBuilds = function getBuilds(builder) {
+  return Promise.all(builder.builds.map(number => this.getBuild(builder, number)));
 };
 
-Adapter.prototype.getAllBuilds = function getAllBuilds() {
-  return this.getInfo()
-    .then(info => Promise.all(info.builders.map(name => this.getBuilds(name))))
+Adapter.prototype.getAllBuilds = function getAllBuilds(info) {
+  return this.getBuilders(info)
+    .then(builders => Promise.all(builders.map(builder => this.getBuilds(builder))))
     .then(builds => [].concat(...builds));
 };
 
@@ -88,9 +86,8 @@ export function cache(adapter, options) {
   function keygen(prefix = 'id') {
     const EMPTY = {};
     let id = 0;
-    return function keygen(item = EMPTY) {
-      if (!keys.has(item)) keys.set(item, prefix + (id++));
-      return keys.get(item);
+    return function keygen() {
+      return [].join.call(arguments, '\n');
     }
   }
 

@@ -1,5 +1,7 @@
-import fetch from './fetch';
 import urltemplate from 'url-template';
+import fetch from './fetch';
+import { inherits } from 'util';
+import { Adapter } from './adapter';
 import { handleResponse } from './util';
 import { PENDING, SUCCESS, FAILURE, ERRORED, ABORTED, UNKNOWN, USER_AGENT } from './constants';
 
@@ -23,7 +25,13 @@ function getHtmlUrl(url) {
   return match[1] + (match[3] || match[5]) + (match[6] || '');
 }
 
+inherits(Travis, Adapter);
+
 export default function Travis(endpoint, { headers: h, github_token, account } = {}) {
+  if (!(this instanceof Travis)) {
+    return new Travis(endpoint, { headers: h, github_token, account });
+  }
+
   const headers = Object.assign({
     'Accept': TRAVIS_MEDIA_TYPE,
     'User-Agent': TRAVIS_USER_AGENT
@@ -33,6 +41,13 @@ export default function Travis(endpoint, { headers: h, github_token, account } =
   };
   const html_url = getHtmlUrl(endpoint);
   let token;
+
+  Adapter.call(this);
+
+  this.getInfo = getInfo;
+  this.getBuilder = getBuilder;
+  this.getBuild = getBuild;
+  this.getBuilders = getBuilders;
 
   function getToken(github_token) {
     return token || (token = fetch(`${endpoint}/auth/github`, {
@@ -59,37 +74,23 @@ export default function Travis(endpoint, { headers: h, github_token, account } =
       .then(makeInfo);
   }
 
-  function getBuilder(name) {
-    return getInfo()
-      .then(function (info) {
-        const repo = info.data.repos.find(repo => repo.slug.split('/').pop() === name);
-        return makeBuilder(repo);
-      });
+  function getBuilder(info, name) {
+    const repo = info.data.repos.find(repo => repo.slug.split('/').pop() === name);
+    return makeBuilder(repo);
   }
 
-  function getBuild(name, number) {
-    return getBuilder(name)
-      .then(function (builder) {
-        const template = urltemplate.parse(builder.builds_url);
-        const url = template.expand({ number });
+  function getBuild(builder, number) {
+    const template = urltemplate.parse(builder.builds_url);
+    const url = template.expand({ number });
 
-        return fetch(url, options)
-          .then(handleResponse)
-          .then(data => makeBuild(builder.data, data.builds[0]));
-      });
+    return fetch(url, options)
+      .then(handleResponse)
+      .then(data => makeBuild(builder.data, data.builds[0]));
   }
 
-  function getBuilders() {
-    return getInfo()
-      .then(function (info) {
-        const repos = info.data.repos.filter(repo => info.builders.indexOf(repo.slug.split('/').pop() >= 0));
-        return repos.map(makeBuilder);
-      });
-  }
-
-  function getBuilds(name) {
-    return getBuilder(name)
-      .then(builder => Promise.all(builder.builds.map(number => getBuild(name, number))));
+  function getBuilders(info) {
+    const repos = info.data.repos.filter(repo => info.builders.indexOf(repo.slug.split('/').pop() >= 0));
+    return repos.map(makeBuilder);
   }
 
   function makeInfo(data) {
@@ -145,12 +146,4 @@ export default function Travis(endpoint, { headers: h, github_token, account } =
       data
     };
   }
-
-  return {
-    getInfo,
-    getBuilder,
-    getBuilders,
-    getBuild,
-    getBuilds
-  };
 }
