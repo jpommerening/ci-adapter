@@ -1,5 +1,3 @@
-import LRU from 'lru-cache';
-
 export function Adapter(options) {
   if (!(this instanceof Adapter)) {
     return new Adapter(options);
@@ -67,33 +65,4 @@ export function combine(...adapters) {
       return adapter.getBuilds(builder).then(addToMap(adapter));
     }
   };
-}
-
-export function cache(adapter, options) {
-  const keys = new WeakMap();
-  const cache = new LRU(options);
-
-  function memoize(fn, keyfn) {
-    return function() {
-      const key = keyfn.apply( this, arguments );
-      const value = cache.get(key) || fn.apply( this, arguments );
-
-      cache.set(key, value);
-      return value;
-    };
-  }
-
-  function keygen(prefix = 'id') {
-    const EMPTY = {};
-    let id = 0;
-    return function keygen() {
-      return [].join.call(arguments, '\n');
-    }
-  }
-
-  return Object.create(adapter, {
-    getInfo: { value: memoize(adapter.getInfo, keygen('info')) },
-    getBuilders: { value: memoize(adapter.getBuilders, keygen('builders')) },
-    getBuilds: { value: memoize(adapter.getBuilds, keygen('builds')) }
-  });
 }

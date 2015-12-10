@@ -17,7 +17,7 @@
     "./lib/fetch.js": "./lib/browser-fetch.js"
   },
   "scripts": {
-    "prepublish": "babel -d lib src && browserify -o browser.js -t [ uglifyify -c ] -g uglifyify --debug -s ci-adapter ./lib/index.js",
+    "prepublish": "babel -d lib src && browserify -o browser.js -p [ minifyify --map browser.js.map --output browser.js.map ] --debug -s ci-adapter ./lib/index.js",
     "test": "mocha --compilers js:babel-core/register"
   },
   "dependencies": {
