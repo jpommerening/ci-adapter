@@ -89,7 +89,7 @@ export default function Travis(endpoint, { headers: h, github_token, account } =
   }
 
   function getBuilders(info) {
-    const repos = info.data.repos.filter(repo => info.builders.indexOf(repo.slug.split('/').pop() >= 0));
+    const repos = info.data.repos.filter(repo => info.builders.indexOf(repo.slug.split('/').pop()) >= 0);
     return Promise.all(repos.map(makeBuilder));
   }
 
@@ -113,9 +113,9 @@ export default function Travis(endpoint, { headers: h, github_token, account } =
     const slug = repo.slug;
     const name = slug.split('/').pop();
     const last = parseInt( repo.last_build_number, 10 );
-    const builds = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
-      .map(x => last - x)
-      .filter(x => x > 0);
+    const builds = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+      .map(n => last - n)
+      .filter(n => n > 0);
     const data = repo;
 
     return {
