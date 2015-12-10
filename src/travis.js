@@ -95,9 +95,7 @@ export default function Travis(endpoint, { headers: h, github_token, account } =
 
   function makeInfo(data) {
     const name = `Travis CI - ${account} (${endpoint})`;
-    const builders = data.repos
-      .filter(repo => repo.last_build_number)
-      .map(repo => repo.slug.split('/')[1]);
+    const builders = data.repos.map(repo => repo.slug.split('/').pop());
 
     return {
       name,
@@ -112,7 +110,7 @@ export default function Travis(endpoint, { headers: h, github_token, account } =
   function makeBuilder(repo) {
     const slug = repo.slug;
     const name = slug.split('/').pop();
-    const last = parseInt( repo.last_build_number, 10 );
+    const last = parseInt( repo.last_build_number, 10 ) || 0;
     const builds = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
       .map(n => last - n)
       .filter(n => n > 0);
