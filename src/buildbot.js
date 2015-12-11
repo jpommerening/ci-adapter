@@ -74,7 +74,7 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
   }
 
   function getBuilders(info) {
-    const select = info.builders;
+    const select = info.builders.map(name => name.replace(/\//g, '%2F'));
     const template = urltemplate.parse(info.builders_url);
     const url = template.expand({ select });
 
@@ -111,14 +111,15 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
   }
 
   function makeBuilder(name, builder) {
+    const path = encodeURIComponent(name);
     const builds = [ -1 ].concat(builder.cachedBuilds);
     const data = builder;
 
     return {
       name,
-      url: `${endpoint}/json/builders/${name}`,
-      html_url: `${endpoint}/builders/${name}`,
-      builds_url: `${endpoint}/json/builders/${name}/builds{/number}{?select*}`,
+      url: `${endpoint}/json/builders/${path}`,
+      html_url: `${endpoint}/builders/${path}`,
+      builds_url: `${endpoint}/json/builders/${path}/builds{/number}{?select*}`,
       builds,
       data
     };
@@ -126,6 +127,7 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
 
   function makeBuild(build) {
     const name = build.builderName;
+    const path = encodeURIComponent(name);
     const number = build.number;
     const building = build.times[ 0 ] && !build.times[ 1 ];
     const data = build;
@@ -133,8 +135,8 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
     return {
       name,
       number,
-      url: `${endpoint}/json/builders/${name}/builds/${number}`,
-      html_url: `${endpoint}/builders/${name}/builds/${number}`,
+      url: `${endpoint}/json/builders/${path}/builds/${number}`,
+      html_url: `${endpoint}/builders/${path}/builds/${number}`,
       state: building ? PENDING : (BUILDBOT_STATE_LIST[ build.results || 0 ] || UNKNOWN),
       start: new Date(build.times[ 0 ] * 1000),
       end: building ? null : new Date(build.times[ 1 ] * 1000),
