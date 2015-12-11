@@ -29,7 +29,7 @@ adapter.getInfo().then(function (info) {
 // }
 ```
 
-### getBuilders()
+### getBuilders( info )
 
 Return a `Promise` and resolve it with a list of builders that are known
 to this adapter. A "builder" may be called differenty by your CI solution, for
@@ -37,7 +37,7 @@ example, _Travis CI_ mainly talks about "repositories" while _Jenkins_ calls
 them "jobs".
 
 ```js
-adapter.getBuilders().then(function (builders) {
+adapter.getBuilders(info).then(function (builders) {
   console.log(builders);
 });
 // [
