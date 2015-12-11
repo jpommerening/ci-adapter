@@ -1,5 +1,6 @@
-import { Adapter, combine } from './adapter';
+import { Adapter } from './adapter';
 import { cache } from './cache';
+import { combine } from './combine';
 import { state } from './constants';
 import Buildbot from './buildbot';
 import Jenkins from './jenkins';
