@@ -2,14 +2,15 @@ import { Adapter } from './adapter';
 
 export function combine(...adapters) {
   const map = new WeakMap();
-
   const adapter = new Adapter();
-  adapter.getInfo = getInfo;
-  adapter.getBuilder = getBuilder;
-  adapter.getBuild = getBuild;
-  adapter.getBuilders = getBuilders;
-  adapter.getBuilds = getBuilds;
-  return adapter;
+
+  return Object.create(adapter, {
+    getInfo: { value: getInfo },
+    getBuilder: { value: getBuilder },
+    getBuild: { value: getBuild },
+    getBuilders: { value: getBuilders },
+    getBuilds: { value: getBuilds }
+  });
 
   function getInfo() {
     return Promise.all(adapters.map(function (adapter) {
