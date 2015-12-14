@@ -28,9 +28,9 @@ function uniqueBuilds(builds) {
 
 inherits(Buildbot, Adapter);
 
-export default function Buildbot(endpoint, { headers: h } = {}) {
+export default function Buildbot(endpoint, { headers: h, tag } = {}) {
   if (!(this instanceof Buildbot)) {
-    return new Buildbot(endpoint, { headers: h });
+    return new Buildbot(endpoint, { headers: h, tag });
   }
 
   const headers = Object.assign({
@@ -75,6 +75,11 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
 
   function getBuilders(info) {
     const select = info.builders.map(name => name.replace(/\//g, '%2F'));
+
+    if (select.length === 0) {
+      return Promise.resolve([]);
+    }
+
     const template = urltemplate.parse(info.builders_url);
     const url = template.expand({ select });
 
@@ -86,6 +91,11 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
 
   function getBuilds(builder) {
     const select = builder.builds;
+
+    if (select.length === 0) {
+      return Promise.resolve([]);
+    }
+
     const template = urltemplate.parse( builder.builds_url );
     const url = template.expand({ select });
 
@@ -97,7 +107,8 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
 
   function makeInfo(root) {
     const name = root.project.title;
-    const builders = Object.keys(root.builders);
+    const builders = Object.keys(root.builders)
+                           .filter(name => !tag || root.builders[name].tags.indexOf(tag) >= 0);
     const data = root;
 
     return {
@@ -112,7 +123,7 @@ export default function Buildbot(endpoint, { headers: h } = {}) {
 
   function makeBuilder(name, builder) {
     const path = encodeURIComponent(name);
-    const builds = [ -1 ].concat(builder.cachedBuilds);
+    const builds = builder.cachedBuilds.length ? [ -1 ].concat(builder.cachedBuilds.slice(-10)) : [];
     const data = builder;
 
     return {
