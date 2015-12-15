@@ -1,6 +1,6 @@
 {
   "name": "ci-adapter",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Uniform access to a bunch of continuous integration providers",
   "homepage": "https://github.com/jpommerening/ci-adapter",
   "author": "Jonas Pommerening",
@@ -21,7 +21,6 @@
     "test": "mocha --compilers js:babel-core/register"
   },
   "dependencies": {
-    "lru": "^1.0.0",
     "lru-cache": "^2.7.0",
     "node-fetch": "^1.3.3",
     "url-template": "^2.0.6"
